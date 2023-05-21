@@ -13,7 +13,7 @@ from steering_angle import steering_angle
 from boundingbox import draw_bounding_boxes
 
 
-
+global sampleTimeStamp
 
 ################################################################################
 # This dictionary contains all distance values to be filled by function onDistance(...).
@@ -22,24 +22,14 @@ distances = { "front": 0.0, "left": 0.0, "right": 0.0, "rear": 0.0 };
 ################################################################################
 # This callback is triggered whenever there is a new distance reading coming in.
 def onDistance(msg, senderStamp, timeStamps):
-    print ("Received distance; senderStamp= %s" % (str(senderStamp)))
-    print ("sent: %s, received: %s, sample time stamps: %s" % (str(timeStamps[0]), str(timeStamps[1]), str(timeStamps[2])))
-    print ("%s" % (msg))
-    if senderStamp == 0:
-        distances["front"] = msg.distance
-    if senderStamp == 1:
-        distances["left"] = msg.distance
-    if senderStamp == 2:
-        distances["rear"] = msg.distance
-    if senderStamp == 3:
-        distances["right"] = msg.distance
+    sampleTimeStamp = timeStamps[2]
 
 
 # Create a session to send and receive messages from a running OD4Session;
 # Replay mode: CID = 253
 # Live mode: CID = 112
 # TODO: Change to CID 112 when this program is used on Kiwi.
-session = OD4Session.OD4Session(cid=111)
+session = OD4Session.OD4Session(cid=112)
 # Register a handler for a message; the following example is listening
 # for messageID 1039 which represents opendlv.proxy.DistanceReading.
 # Cf. here: https://github.com/chalmers-revere/opendlv.standard-message-set/blob/master/opendlv.odvd#L113-L115
@@ -66,7 +56,6 @@ cond = sysv_ipc.Semaphore(keySemCondition)
 while True:
     # Wait for next notification.
     cond.Z()
-    print ("Received new frame.")
 
     # Lock access to shared memory.
     mutex.acquire()
@@ -102,15 +91,5 @@ while True:
     cv2.imshow("image", img);
     cv2.waitKey(2);
 
-    ############################################################################
-    # Example: Accessing the distance readings.
-
-
-    ############################################################################
-    # Example for creating and sending a message to other microservices; can
-    # be removed when not needed.
-    angleReading = opendlv_standard_message_set_v0_9_10_pb2.opendlv_proxy_AngleReading()
-    angleReading.angle = steering_angle(blue_contours, yellow_contours)
-
-    # 1038 is the message ID for opendlv.proxy.AngleReading
-    session.send(1038, angleReading.SerializeToString());
+    angleReading= steering_angle(blue_contours, yellow_contours)
+    print ("group 16; " + str(angleReading) + " ; " + str(sampleTimeStamp) )

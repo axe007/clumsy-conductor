@@ -1,0 +1,38 @@
+FROM arm32v7/ubuntu:18.04
+MAINTAINER Christian Berger "christian.berger@gu.se"
+
+# Set the env variable DEBIAN_FRONTEND to noninteractive
+ENV DEBIAN_FRONTEND noninteractive
+
+ENV QEMU_EXECVE 1
+COPY ./cross-build/cross-build-start /usr/bin/cross-build-start
+COPY ./cross-build/cross-build-end /usr/bin/cross-build-end
+COPY ./cross-build/qemu-arm-static /usr/bin/qemu-arm-static
+COPY ./cross-build/sh-shim /usr/bin/sh-shim
+
+RUN ["cross-build-start"]
+
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+        software-properties-common && \
+    add-apt-repository ppa:chrberger/libcluon && \
+    apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get dist-upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        python-protobuf \
+        python-sysv-ipc \
+        python-numpy \
+        python-opencv \
+        protobuf-compiler \
+        libcluon && \
+    apt-get clean
+
+ADD ./src /opt/sources
+WORKDIR /opt/sources
+RUN make
+
+RUN ["cross-build-end"]
+
+ENTRYPOINT ["/opt/sources/main.py"]
