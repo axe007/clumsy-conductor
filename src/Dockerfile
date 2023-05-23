@@ -11,7 +11,14 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN rm -rf /var/lib/apt/lists/* && \
     apt-get clean && \
     apt-get update --fix-missing && \
-    apt-get install -y protobuf-compiler build-essential python3-sysv-ipc python3-numpy python3-opencv protobuf-compiler software-properties-common && \
+    apt-get install -y build-essential python3-sysv-ipc python3-numpy python3-opencv software-properties-common python3-pip && \
+    pip3 install protobuf && \
+    apt-get remove -y protobuf-compiler && \
+    apt-get install -y wget unzip && \
+    wget https://github.com/protocolbuffers/protobuf/releases/download/v3.19.0/protoc-3.19.0-linux-x86_64.zip && \
+    unzip protoc-3.19.0-linux-x86_64.zip -d /protoc && \
+    mv /protoc/bin/* /usr/local/bin/ && \
+    mv /protoc/include/* /usr/local/include/ && \
     add-apt-repository -y ppa:chrberger/libcluon && \
     apt-get update && \
     apt-get upgrade -y && \
@@ -24,6 +31,9 @@ COPY ./src /opt/sources
 
 # Set the working directory
 WORKDIR /opt/sources
+
+# Regenerate the Python code from .proto files
+RUN protoc --python_out=. *.proto
 
 # Build the project
 RUN make
@@ -38,7 +48,8 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN rm -rf /var/lib/apt/lists/* && \
     apt-get clean && \
     apt-get update --fix-missing && \
-    apt-get install -y python3 python3-sysv-ipc python3-numpy python3-opencv protobuf-compiler && \
+    apt-get install -y python3 python3-sysv-ipc python3-numpy python3-opencv python3-pip && \
+    pip3 install protobuf && \
     apt-get clean
 
 # Copy the compiled program from the builder

@@ -12,13 +12,21 @@ from cone_detection import get_color_mask, cone_contours
 from steering_angle import steering_angle
 from boundingbox import draw_bounding_boxes
 
+#parsing arguments
+import argparse
+
+# Define the argument parser
+parser = argparse.ArgumentParser(description='For custom modes of the script running.')
+parser.add_argument('--verbose', action='store_true', help='print verbose output')
+parser.add_argument('--cid', type=int, help='input custom cid number')
+args = parser.parse_args()
 
 global sampleTimeStamp
 
 ################################################################################
 # This dictionary contains all distance values to be filled by function onDistance(...).
 distances = { "front": 0.0, "left": 0.0, "right": 0.0, "rear": 0.0 };
-
+cid = args.cid if args.cid else 112
 ################################################################################
 # This callback is triggered whenever there is a new distance reading coming in.
 def onDistance(msg, senderStamp, timeStamps):
@@ -29,7 +37,7 @@ def onDistance(msg, senderStamp, timeStamps):
 # Replay mode: CID = 253
 # Live mode: CID = 112
 # TODO: Change to CID 112 when this program is used on Kiwi.
-session = OD4Session.OD4Session(cid=112)
+session = OD4Session.OD4Session(cid=cid)
 # Register a handler for a message; the following example is listening
 # for messageID 1039 which represents opendlv.proxy.DistanceReading.
 # Cf. here: https://github.com/chalmers-revere/opendlv.standard-message-set/blob/master/opendlv.odvd#L113-L115
