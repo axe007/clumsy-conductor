@@ -1,46 +1,51 @@
-##################################################
-# Section 1: Build the application
-FROM ubuntu:22.04 as builder
+#
+# Scribbled on by Group 16, Class of 2023
+#
+# Use Docker buildx for multi-arch build
+# docker buildx create --name multiarch --driver docker-container --use
+# docker buildx inspect --bootstrap
+# docker buildx build --platform linux/amd64,linux/arm/v7 -t clumsy-conductor .
+# And fire away
 
+# First stage for building the software:
+FROM --platform=$BUILDPLATFORM ubuntu:18.04 as builder
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# Upgrade the Ubuntu 18.04 LTS base image
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get dist-upgrade -y
-
-# Get timezone data before installing tzdata
-RUN ln -snf /usr/share/zoneinfo/$(curl https://ipapi.co/timezone) /etc/localtime
-# Install CMake, essential libraries, line coverage tool
-RUN apt-get install -y --no-install-recommends \
+    apt-get dist-upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
         cmake \
         build-essential \
-        lcov \
-        gcovr
+        libopencv-dev
 
+# Include this source tree and compile the sources
 ADD . /opt/sources
 WORKDIR /opt/sources
-
-RUN cd /opt/sources && \
-    mkdir build && \
+RUN mkdir build && \
     cd build && \
-    cmake -D CMAKE_BUILD_TYPE=Release .. && \
-    make && make test && cp helloworld /tmp && \
-    lcov --capture --directory . --output-file coverage.info && \
-    lcov --remove coverage.info '/usr/*' --output-file coverage_filtered.info && \
-    lcov --remove coverage_filtered.info '*/catch.hpp' --output-file coverage_final.info && \
-    genhtml coverage_final.info --output-directory coverage_report && \
-    echo "Running gcovr commands..." && \
-    gcovr -r .. --xml --exclude '.*\/catch.hpp' --print-summary -o coverage_report/coverage.xml && \
-    gcovr -r .. --html-details --exclude '.*\/catch.hpp' -o coverage_report/gcov_details.html
+    cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/tmp .. && \
+    make && make install
 
-##################################################
-# Section 2: Bundle the application.
-FROM ubuntu:22.04
+
+# Second stage for packaging the software into a software bundle:
+FROM --platform=$TARGETPLATFORM ubuntu:18.04
+
+ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get dist-upgrade -y
 
-WORKDIR /opt
-COPY --from=builder /tmp/helloworld .
-COPY --from=builder /opt/sources/build/coverage_report /opt/coverage_report
+RUN apt-get install -y --no-install-recommends \
+        libopencv-core3.2 \
+        libopencv-highgui3.2 \
+        libopencv-imgproc3.2 
 
-ENTRYPOINT ["/opt/helloworld"]
+WORKDIR /usr/bin
+COPY --from=builder /tmp/bin/clumsy-conductor .
+# This is the entrypoint when starting the Docker container; hence, this Docker image is automatically starting our software on its creation
+ENTRYPOINT ["/usr/bin/clumsy-conductor"]
