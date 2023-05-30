@@ -4,40 +4,26 @@
 
 #include "ColorCrafter.hpp"
 
-// Include the single-file, header-only middleware libcluon to create
-// high-performance microservices
-#include "cluon-complete-v0.0.127.hpp"
-
-// Include the GUI and image processing header files from OpenCV
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-
-std::pair<cv::Mat, cv::Mat> ColorCrafter::processImage(cv::Mat image) {
+std::pair<cv::Mat, cv::Mat> ColorCrafter::processColors(cv::Mat image) {
 
     int iLowHYellow = 20;
     int iHighHYellow = 45;
-
     int iLowSYellow = 100;
     int iHighSYellow = 235;
-
     int iLowVYellow = 124;
     int iHighVYellow = 255;
 
     int iLowHBlue = 109;
     int iHighHBlue = 135;
-
     int iLowSBlue = 68;
-    int iHighSBlue = 250;
-
+    int iHighSBlue = 255;
     int iLowVBlue = 52;
     int iHighVBlue = 255;
 
     int iReflectionLowHBlue = 0;
     int iReflectionHighHBlue = 179;
-
     int iReflectionLowSBlue = 50;
     int iReflectionHighSBlue = 80;
-
     int iReflectionLowVBlue = 0;
     int iReflectionHighVBlue = 255;
 
@@ -50,7 +36,7 @@ std::pair<cv::Mat, cv::Mat> ColorCrafter::processImage(cv::Mat image) {
     cv::Mat blueImgAnd;
     cv::Mat finalBlueImg;
 
-    // Crop out top half of image
+    // Divide image height in half as cones are in bottom half only
     cv::Mat croppedImage =
             image(cv::Rect(0, image.rows / 2, image.cols, image.rows / 2));
 
@@ -58,16 +44,16 @@ std::pair<cv::Mat, cv::Mat> ColorCrafter::processImage(cv::Mat image) {
     blueImg = yellowImg.clone();
     blueReflectionImg = yellowImg.clone();
 
-    // Colour process to detect yellow cones
+    // Process colors to detect yellow cones
     cv::inRange(yellowImg, cv::Scalar(iLowHYellow, iLowSYellow, iLowVYellow),
                 cv::Scalar(iHighHYellow, iHighSYellow, iHighVYellow),
                 yellowImgInRange);
 
-    // Colour process to detect blue cones
+    // Process colors to detect blue cones
     cv::inRange(blueImg, cv::Scalar(iLowHBlue, iLowSBlue, iLowVBlue),
                 cv::Scalar(iHighHBlue, iHighSBlue, iHighVBlue), blueImgInRange);
 
-    // Colour process to detect large reflections
+    // Process colors to detect reflection of cones
     cv::inRange(
             blueReflectionImg,
             cv::Scalar(iReflectionLowHBlue, iReflectionLowSBlue, iReflectionLowVBlue),
@@ -75,14 +61,13 @@ std::pair<cv::Mat, cv::Mat> ColorCrafter::processImage(cv::Mat image) {
                        iReflectionHighVBlue),
             blueImgInRangeReflection);
 
-    // Use bitwise AND operator to find reflections in blue cone image
+    // Bitwise AND operator to find reflections of blue cones
     cv::bitwise_and(blueImgInRange, blueImgInRangeReflection, blueImgAnd);
 
-    // Use bitwise XOR operator to remove found reflections from blue cone image
+    // Bitwise XOR operator to remove found reflections of blue cones
     cv::bitwise_xor(blueImgAnd, blueImgInRange, finalBlueImg);
 
-    std::pair<cv::Mat, cv::Mat> pairs =
-            std::make_pair(yellowImgInRange, finalBlueImg);
+    std::pair<cv::Mat, cv::Mat> pairs = std::make_pair(yellowImgInRange, finalBlueImg);
 
     return pairs;
 }

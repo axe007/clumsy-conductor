@@ -1,26 +1,13 @@
-# Copyright (C) 2023  Christian Berger
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 # Which Docker image shall be used on the GitLab runner?
 image: docker:19.03.3
 
 # Details about how to connect to the Docker service to run this build.
 variables:
   DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
-  COVERAGE: "true"
+  CI_BUILDX_ARCHS: "linux/amd64,linux/arm/v7"
+  BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64
 
 services:
   - name: docker:19.03.3-dind
@@ -31,51 +18,39 @@ stages:
 
 # Display information before we start the build.
 before_script:
-  - docker image prune -f
   - docker info
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
 # This section describes what shall be done to build and test the project.
-build-and-test:
+build:
   only: 
     - branches
-  tags:
-    - docker-build
   stage: build
-  variables: 
-    COVERAGE: "true"
   script:
-    - docker build -f Dockerfile -t "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}" .
-    - docker create --name temp_container "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}"
-    - docker cp temp_container:/opt/coverage_report ./coverage_report
-    - docker rm temp_container
-    - apk add --no-cache curl git
-    - curl -Os https://uploader.codecov.io/latest/linux/codecov
-    - chmod +x codecov
-    - ./codecov -t $CODECOV_TOKEN -f coverage_report/coverage.xml
+    - docker build -t $CI_REGISTRY_IMAGE:latest -f Dockerfile .
+    - mkdir cid
+    - docker create --cidfile "cid/container_id.cid" $CI_REGISTRY_IMAGE:latest
+    - docker rm `cat cid/container_id.cid`
   except:
     - tags
-  coverage: '/lines:\s+(\d+\.\d+)\%/'
-  artifacts:
-    name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
-    expire_in: 60 days
-    when: always
-    paths:
-      - coverage_report
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage_report/coverage.xml
-        
+
 # This section describes what shall be done to deploy artefacts from the project.
 release:
-  tags:
-    - docker-build
   stage: deploy
-  script:
-    - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .
-    - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG"
+  before_script:
+    - mkdir -p ~/.docker/cli-plugins
+    - wget -O ~/.docker/cli-plugins/docker-buildx $BUILDX_URL
+    - chmod 755 ~/.docker/cli-plugins/docker-buildx
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx create --name multiarchbuilder --use
+    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx inspect --bootstrap
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   only:
-    - /^v(\d+\.)?(\d+\.)?(\d+)$/
+    refs:
+      - tags
+    variables:
+      - $CI_COMMIT_TAG =~ /^v(\d+\.\d+\.\d+)$/
   dependencies:
-    - build-and-test
+    - build
+  script:
+    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform $CI_BUILDX_ARCHS -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" --push .

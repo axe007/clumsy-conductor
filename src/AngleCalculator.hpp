@@ -5,20 +5,18 @@
 #ifndef ANGLECALCULATOR
 #define ANGLECALCULATOR
 
-// Include the single-file, header-only middleware libcluon to create
-// high-performance microservices
+// Import the header-only middleware library, libcluon, to build high-performance microservices.
 #include "cluon-complete-v0.0.127.hpp"
 
-// Include the GUI and image processing header files from OpenCV
+// Incorporate the GUI and image processing headers from OpenCV.
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
 
 class AngleCalculator {
     public:
         float getAngleBetweenCones(std::vector<cv::Point2f> points);
         float getAngleOfRoad(std::vector<cv::Point2f> yellow, std::vector<cv::Point2f> blue);
-        float distanceBetweenTwoPoints(float xInPoint1, float yInPoint1, float xInPoint2, float yInPoint2);
+        float distanceBetweenPoints(float xInPoint1, float yInPoint1, float xInPoint2, float yInPoint2);
 };
 
 #endif // ANGLECALCULATOR

@@ -4,7 +4,7 @@
 
 #include "NoiseNeutralizer.hpp"
 
-std::pair<cv::Mat, cv::Mat> NoiseNeutralizer::processImage(std::pair<cv::Mat, cv::Mat> incomingImg) {
+std::pair<cv::Mat, cv::Mat> NoiseNeutralizer::reduceNoise(std::pair<cv::Mat, cv::Mat> incomingImg) {
     std::pair<cv::Mat, cv::Mat> neutralizedImage;
 
     // Yellow cone - Fill holes in objects

@@ -1,84 +1,55 @@
 //
-// Created by Altan on 5/27/2023.
+// Scribbled on by Group 16, Class of 2023
 //
 
 #include "PerspectivePivoter.hpp"
+#include <iostream>
 
-// Include the single-file, header-only middleware libcluon to create
-// high-performance microservices
-#include "cluon-complete-v0.0.127.hpp"
+PerspectivePivoter::PerspectivePivoter() {
+    cv::Point2f sourceVertices[4];
+    sourceVertices[0] = cv::Point(207, 285);
+    sourceVertices[1] = cv::Point(364, 285);
+    sourceVertices[2] = cv::Point(476, 350);
+    sourceVertices[3] = cv::Point(89, 353);
 
-// Include the GUI and image processing header files from OpenCV
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+    cv::Point2f dstVertices[4];
 
-cv::Mat PerspectivePivoter::calculateMatrix() {
+    // Close-up perspective view
+    dstVertices[0] = cv::Point(125, 130);
+    dstVertices[1] = cv::Point(390, 130);
+    dstVertices[2] = cv::Point(390, 395);
+    dstVertices[3] = cv::Point(125, 395);
 
-    //  Calibration vertices
-    //
-    //    [0]    [1]
-    //
-    //  [2]         [3]
-    //
-    // These map to the corners of the checkerboard, see:
-    // /assets/images/calibration.png
-    cv::Point2f src_vertices[4];
-    src_vertices[0] = cv::Point(207, 285);
-    src_vertices[1] = cv::Point(364, 285);
-    src_vertices[2] = cv::Point(476, 350);
-    src_vertices[3] = cv::Point(89, 353);
-
-    // How the vertices should be mapped on the destination image
-    //
-    //    [0]   [1]
-    //
-    //    [2]   [3]
-    //
-
-    cv::Point2f dst_vertices[4];
-
-    // CLOSE PERSPECTIVE
-    dst_vertices[0] = cv::Point(125, 130);
-    dst_vertices[1] = cv::Point(390, 130);
-    dst_vertices[2] = cv::Point(390, 395);
-    dst_vertices[3] = cv::Point(125, 395);
-
-    /* MEDIUM PERSPECTIVE
-    dst_vertices[0] = Point(150, 105);
-    dst_vertices[1] = Point(415, 105);
-    dst_vertices[2] = Point(415, 370);
-    dst_vertices[3] = Point(150, 370);
-    */
-
-    // Calculates a matrix of a perspective transform
-    cv::Mat M = getPerspectiveTransform(src_vertices, dst_vertices);
-
-    return M;
+    // Calculate perspective matrix transform
+    this->perspectiveMatrix = getPerspectiveTransform(sourceVertices, dstVertices);
 }
 
-cv::Mat PerspectivePivoter::changeView(cv::Mat image) {
-    // Size of destination image
-    cv::Mat dst(480, 640, CV_8UC3);
+cv::Mat PerspectivePivoter::changeView(const cv::Mat &image) {
+    // Check if image is empty
+    if (image.empty()) {
+        std::cerr << "Error: Image is empty. Skipping this image.\n";
+        return image; // Return same image
+    }
 
-    cv::Mat M = calculateMatrix();
+    // Destination image size
+    cv::Mat destImg(480, 640, CV_8UC3);
 
-    // Changing perspective to birds-eye view
-    cv::warpPerspective(image, dst, M, dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+    // Change perspective to birds-eye
+    cv::warpPerspective(image, destImg, this->perspectiveMatrix, destImg.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
-    // cv::imshow("birds-eye-view", dst);
-
-    cv::waitKey(1);
-
-    return dst;
+    return destImg;
 }
 
-std::vector<cv::Point2f>
-PerspectivePivoter::convertPoints(std::vector<cv::Point2f> coordinates) {
-    cv::Mat M = calculateMatrix();
+std::vector<cv::Point2f> PerspectivePivoter::convertPoints(const std::vector<cv::Point2f> &coordinates) {
+    // Check if vector is empty
+    if (coordinates.empty()) {
+        std::cerr << "Error: Vector is empty. Skipping this image.\n";
+        return coordinates; // Return empty vector
+    }
 
-    std::vector<cv::Point2f> dst_points;
+    std::vector<cv::Point2f> dstPoints;
 
-    // Changing perspective to birds-eye view
-    cv::perspectiveTransform(coordinates, dst_points, M);
-    return dst_points;
+    // Change perspective to birds-eye
+    cv::perspectiveTransform(coordinates, dstPoints, this->perspectiveMatrix);
+    return dstPoints;
 }

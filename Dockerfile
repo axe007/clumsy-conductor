@@ -30,7 +30,6 @@ RUN mkdir build && \
     cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/tmp .. && \
     make && make install
 
-
 # Second stage for packaging the software into a software bundle:
 FROM --platform=$TARGETPLATFORM ubuntu:18.04
 

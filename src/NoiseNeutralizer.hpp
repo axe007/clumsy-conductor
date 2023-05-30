@@ -5,17 +5,16 @@
 #ifndef NOISENEUTRALIZER
 #define NOISENEUTRALIZER
 
-// Include the single-file, header-only middleware libcluon to create
-// high-performance microservices
+// Import the header-only middleware library, libcluon, to build high-performance microservices.
 #include "cluon-complete-v0.0.127.hpp"
 
-// Include the GUI and image processing header files from OpenCV
+// Incorporate the GUI and image processing headers from OpenCV.
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 class NoiseNeutralizer {
     public:
-        std::pair<cv::Mat, cv::Mat> processImage(std::pair<cv::Mat, cv::Mat> incomingImg);
+        std::pair<cv::Mat,cv::Mat> reduceNoise(std::pair<cv::Mat, cv::Mat> incomingImg);
 };
 
 #endif // NOISENEUTRALIZER
