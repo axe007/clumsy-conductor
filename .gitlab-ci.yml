@@ -7,6 +7,7 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
   CI_BUILDX_ARCHS: "linux/amd64,linux/arm/v7"
+  DOCKER_CLI_EXPERIMENTAL: enabled
   BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64
 
 services:
@@ -26,6 +27,8 @@ build:
   only: 
     - branches
   stage: build
+  tags:
+    - docker-build
   script:
     - docker build -t $CI_REGISTRY_IMAGE:latest -f Dockerfile .
     - mkdir cid
@@ -37,6 +40,8 @@ build:
 # This section describes what shall be done to deploy artefacts from the project.
 release:
   stage: deploy
+  tags:
+    - docker-build
   before_script:
     - mkdir -p ~/.docker/cli-plugins
     - wget -O ~/.docker/cli-plugins/docker-buildx $BUILDX_URL
