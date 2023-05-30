@@ -8,7 +8,7 @@
 # And fire away
 
 # First stage for building the software:
-FROM ubuntu:18.04 as builder
+FROM --platform=$BUILDPLATFORM ubuntu:18.04 as builder
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -31,7 +31,7 @@ RUN mkdir build && \
     make && make install
 
 # Second stage for packaging the software into a software bundle:
-FROM ubuntu:18.04
+FROM --platform=$TARGETPLATFORM ubuntu:18.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
