@@ -20,20 +20,20 @@ stages:
 # Display information before we start the build.
 before_script:
   - docker info
-  - docker login -u $CI_REGISTRY_USER -p $CI_ACCESS_TOKEN $CI_REGISTRY
+  - docker login -u $CI_REGISTRY_USER -p ${CI_ACCESS_TOKEN} $CI_REGISTRY
 
 # This section describes what shall be done to build and test the project.
 build:
   only: 
     - branches
-  stage: build
   tags:
     - docker-build
+  stage: build
+  variables: 
+    COVERAGE: "true"
   script:
-    - docker build -t $CI_REGISTRY_IMAGE:latest -f Dockerfile .
-    - mkdir cid
-    - docker create --cidfile "cid/container_id.cid" $CI_REGISTRY_IMAGE:latest
-    - docker rm `cat cid/container_id.cid`
+    - docker build -f Dockerfile -t "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}" .
+    - docker create --name temp_container "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}"
   except:
     - tags
 
@@ -49,7 +49,7 @@ release:
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx create --name multiarchbuilder --use
     - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx inspect --bootstrap
-    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+    - docker login -u $CI_REGISTRY_USER -p ${CI_ACCESS_TOKEN} ${CI_REGISTRY}
   only:
     refs:
       - tags

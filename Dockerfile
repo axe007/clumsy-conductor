@@ -31,7 +31,7 @@ RUN mkdir build && \
     make && make install
 
 # Second stage for packaging the software into a software bundle:
-FROM --platform=$TARGETPLATFORM ubuntu:18.04
+FROM ubuntu:18.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
