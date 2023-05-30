@@ -8,7 +8,7 @@
 # And fire away
 
 # First stage for building the software:
-FROM --platform=$BUILDPLATFORM ubuntu:18.04 as builder
+FROM ubuntu:18.04 as builder
 
 ENV DEBIAN_FRONTEND noninteractive
 
