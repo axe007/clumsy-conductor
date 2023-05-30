@@ -27,7 +27,7 @@ build:
   only: 
     - branches
   tags:
-    - docker-build
+    - docker
   stage: build
   variables: 
     COVERAGE: "true"
@@ -41,7 +41,7 @@ build:
 release:
   stage: deploy
   tags:
-    - docker-build
+    - docker
   before_script:
     - mkdir -p ~/.docker/cli-plugins
     - wget -O ~/.docker/cli-plugins/docker-buildx $BUILDX_URL
