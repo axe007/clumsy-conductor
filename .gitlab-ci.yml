@@ -44,7 +44,7 @@ release:
       command: ["--experimental"]
       alias: 'docker'
   tags:
-    - docker-build
+    - docker
   before_script:
     - apk add bash grep wget git tar gnuplot
     - mkdir -p ~/.docker/cli-plugins
