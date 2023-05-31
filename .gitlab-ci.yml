@@ -50,7 +50,6 @@ release:
     - mkdir -p ~/.docker/cli-plugins
     - wget -O ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.10.5/buildx-v0.10.5.linux-amd64
     - chmod a+x ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static:register --reset
     - docker info
     - docker login -u $CI_REGISTRY_USER -p $CI_ACCESS_TOKEN $CI_REGISTRY
     - docker buildx create --name platformbuilder --use
