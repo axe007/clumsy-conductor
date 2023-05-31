@@ -11,7 +11,8 @@ variables:
   BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64
 
 services:
-  - name: docker:19.03.3-dind
+  - name: docker:dind
+    command: ["--experimental"]
 
 stages:
   - build
@@ -20,19 +21,20 @@ stages:
 # Display information before we start the build.
 before_script:
   - docker info
-  - docker login -u $CI_REGISTRY_USER -p ${CI_ACCESS_TOKEN} $CI_REGISTRY
+  - docker login -u $CI_REGISTRY_USER -p $CI_ACCESS_TOKEN $CI_REGISTRY
 
 # This section describes what shall be done to build and test the project.
 build:
   only: 
     - branches
   tags:
-    - shell
+    - docker-build
   stage: build
   variables: 
     COVERAGE: "true"
   script:
     - docker build -f Dockerfile -t "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}" .
+    - mkdir cid
     - docker create --name temp_container "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}"
   except:
     - tags
@@ -41,7 +43,7 @@ build:
 release:
   stage: deploy
   tags:
-    - shell
+    - docker-build
   before_script:
     - mkdir -p ~/.docker/cli-plugins
     - wget -O ~/.docker/cli-plugins/docker-buildx $BUILDX_URL
