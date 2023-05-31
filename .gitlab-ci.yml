@@ -41,7 +41,7 @@ release:
   stage: deploy
   services:
     - name: docker:dind
-      command: ["dockerd", "--host=tcp://0.0.0.0:2375"]
+      command: ["--experimental"]
       alias: 'docker'
   tags:
     - docker-build
@@ -51,7 +51,7 @@ release:
     - wget -O ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64
     - chmod a+x ~/.docker/cli-plugins/docker-buildx
     - docker info
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com
+    - docker login -u $CI_REGISTRY_USER -p $CI_ACCESS_TOKEN $CI_REGISTRY
     - docker buildx create --name platformbuilder --use
     - docker buildx inspect --bootstrap
   only:
