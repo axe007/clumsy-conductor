@@ -16,7 +16,7 @@ transfer:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_ACCESS_TOKEN $CI_REGISTRY
   tags:
-    - docker-build
+    - docker
   script:
     - docker pull axe007/mauses:v1.0.0
     - docker tag axe007/mauses:v1.0.0 $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME
