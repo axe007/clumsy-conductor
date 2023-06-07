@@ -1,68 +1,24 @@
-# Which Docker image shall be used on the GitLab runner?
-image: docker:19.03.3
-
-# Details about how to connect to the Docker service to run this build.
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_CLI_EXPERIMENTAL: enabled
+image: docker:latest
 
 services:
-  - name: docker:dind
-    command: ["--experimental"]
+  - docker:dind
 
 stages:
-  - build
-  - deploy
+  - transfer
 
-# Display information before we start the build.
-before_script:
-  - docker info
-  - docker login -u $CI_REGISTRY_USER -p $CI_ACCESS_TOKEN $CI_REGISTRY
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://localhost:2375
+  DOCKER_TLS_CERTDIR: "/certs"
 
-# This section describes what shall be done to build and test the project.
-build:
-  only: 
-    - branches
-  tags:
-    - docker-build
-  stage: build
-  variables: 
-    COVERAGE: "true"
-  script:
-    - docker build -f Dockerfile -t "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}" .
-    - mkdir cid
-    - docker create --name temp_container "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}"
-  except:
-    - tags
-
-# This section describes what shall be done to deploy artefacts from the project.
-release:
-  stage: deploy
-  services:
-    - name: docker:dind
-      command: ["--experimental"]
-      alias: 'docker'
-  tags:
-    - docker-build
+transfer:
+  stage: transfer
   before_script:
-    - apk add bash grep wget git tar gnuplot
-    - mkdir -p ~/.docker/cli-plugins
-    - wget -O ~/.docker/cli-plugins/docker-buildx https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64
-    - chmod a+x ~/.docker/cli-plugins/docker-buildx
-    - docker info
-    - docker login -u $CI_REGISTRY_USER -p $CI_ACCESS_TOKEN $CI_REGISTRY
-    - docker buildx create --name platformbuilder --use
-    - docker buildx inspect --bootstrap
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker pull axe007/mauses:v1.0.0
+    - docker tag axe007/mauses:v1.0.0 $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME
+    - docker push $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME
   only:
-    refs:
-      - tags
-    variables:
-      - $CI_COMMIT_TAG =~ /^v(\d+\.\d+\.\d+)$/
-  script: |
-    docker buildx build \
-          -f Dockerfile \
-          --platform linux/arm/v7,linux/amd64 \
-          --push \
-          --tag "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" \
-          .
+    - tags
+    - /^v1.0.2$/
